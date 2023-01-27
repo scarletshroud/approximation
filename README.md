@@ -205,7 +205,41 @@ approximator(ApproximationMethod) ->
 
 ### Обработчик пользовательского ввода
 ```erlang
+input_stream_handler(Approximators, PrinterPid, Points, Config) ->
+  case read_point() of
+    {ok, NewPoint} ->
+      LastPoint =
+        case Points of
+          [] -> #point{x = NewPoint#point.x - 1, y = NewPoint#point.y};
+          _ -> lists:last(Points)
+        end,
+      case LastPoint#point.x >= NewPoint#point.x of
+        true ->
+          PrinterPid ! {print_message, "New point must be greater than previous."},
+          input_stream_handler(Approximators, PrinterPid, Points, Config);
 
+        false ->
+          case length(Points) >= Config#config.window - 1 of
+            true ->
+              NewPoints = shift_window(lists:append(Points, [NewPoint]), Config#config.window),
+              Solutions = get_solutions(Approximators, NewPoints, Config#config.step),
+              print_solutions(Solutions, PrinterPid),
+              input_stream_handler(Approximators, PrinterPid, NewPoints, Config);
+
+            false ->
+              input_stream_handler(
+                Approximators,
+                PrinterPid,
+                lists:append(Points, [NewPoint]),
+                Config
+              )
+          end
+      end;
+
+    {error, _} ->
+      PrinterPid ! {print_message, "Invalid input. Try again."},
+      input_stream_handler(Approximators, PrinterPid, Points, Config)
+  end.
 ```
 
 
