@@ -14,7 +14,7 @@ read_point() ->
   end.
 
 
-send_multicast(Approximators, Points, Step) ->
+request_solutions(Approximators, Points, Step) ->
   lists:foreach(
     fun (Approximator) -> Approximator ! {approximate, self(), Points, Step} end,
     Approximators
@@ -31,7 +31,7 @@ receive_solutions([_ | Approximators], Solutions) ->
   end.
 
 get_solutions(Approximators, Points, Step) ->
-  send_multicast(Approximators, Points, Step),
+  request_solutions(Approximators, Points, Step),
   receive_solutions(Approximators, []).
 
 
